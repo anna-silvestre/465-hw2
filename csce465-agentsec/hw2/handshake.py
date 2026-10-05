@@ -161,18 +161,19 @@ def session(gateway_rsa_private_key, node_rsa_private_key):
     # K_n2g_mac = HMAC-SHA-256(K_master, "node-to-gateway MAC" || TH)
     # session_id = first 8 bytes of HMAC-SHA-256(K_master, "session identifier" || TH)
 
-# STEP 1
-print("generating key pairs...")
-# Gateway long-term RSA key pair
-gateway_rsa_private_key = rsa.generate_private_key(public_exponent=65537, key_size=3072)
-gateway_rsa_public_key = gateway_rsa_private_key.public_key()
+if __name__ == "__main__":
+    # STEP 1
+    print("generating key pairs...")
+    # Gateway long-term RSA key pair
+    gateway_rsa_private_key = rsa.generate_private_key(public_exponent=65537, key_size=3072)
+    gateway_rsa_public_key = gateway_rsa_private_key.public_key()
 
-# Node long-term RSA key pair
-node_rsa_private_key = rsa.generate_private_key(public_exponent=65537, key_size=3072)
-node_rsa_public_key = node_rsa_private_key.public_key()
+    # Node long-term RSA key pair
+    node_rsa_private_key = rsa.generate_private_key(public_exponent=65537, key_size=3072)
+    node_rsa_public_key = node_rsa_private_key.public_key()
 
-while True:
-    print("\nStarting a new handshake...\n")
-    session(gateway_rsa_private_key, node_rsa_private_key)
-    input("\nPress Enter to start a new handshake or Ctrl+C to exit...")
+    while True:
+        print("\nStarting a new handshake...\n")
+        session(gateway_rsa_private_key, node_rsa_private_key)
+        input("\nPress Enter to start a new handshake or Ctrl+C to exit...")
     

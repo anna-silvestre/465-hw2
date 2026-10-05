@@ -1,5 +1,6 @@
 import os
-from cryptography.hazmat.primitives import Cipher, algorithms, modes, hashes, hmac
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives import hashes, hmac
 # task 3
 
 # header = version(1 byte) || direction(1 byte) || sequence(8 bytes) || message_type(1 byte) || ciphertext_length(4 bytes)
@@ -10,13 +11,23 @@ from cryptography.hazmat.primitives import Cipher, algorithms, modes, hashes, hm
 def seal(handshake_details, version, direction, sequence, message_type, plaintext):
     # TODO
     session_id = handshake_details['session_id']
-    K_enc = handshake_details['K_enc']
-    K_mac = handshake_details['K_mac']
+    
+    if direction == 0:
+        K_enc = handshake_details['K_g2n_enc']
+        K_mac = handshake_details['K_g2n_mac']
+    elif direction == 1:
+        K_enc = handshake_details['K_n2g_enc']
+        K_mac = handshake_details['K_n2g_mac']
+    else:
+        raise ValueError(f"Invalid direction: {direction}")
     header = version.to_bytes(1, byteorder='big') + direction.to_bytes(1, byteorder='big') + sequence.to_bytes(8, byteorder='big') + message_type.to_bytes(1, byteorder='big') + len(plaintext).to_bytes(4, byteorder='big')
     iv = session_id + sequence.to_bytes(8, byteorder='big')
     cipher = Cipher(algorithms.AES(K_enc), modes.CTR(iv))
     encryptor = cipher.encryptor()
     ciphertext = encryptor.update(plaintext) + encryptor.finalize()
+
+    print(f"Sealing record: version={version}, direction={direction}, sequence={sequence}, message_type={message_type}, plaintext_length={len(plaintext)}, ciphertext_length={len(ciphertext)}")
+    print(ciphertext)
 
     h = hmac.HMAC(K_mac, hashes.SHA256())
     h.update(header + iv + ciphertext)
@@ -31,8 +42,16 @@ def open_record(handshake_details, version, direction, sequence, message_type, p
     header = payload[:15]
     iv = payload[15:31]
     ciphertext = payload[31:-32]
-    K_mac = handshake_details['K_mac']
-    
+
+    if direction == 0:
+        K_mac = handshake_details['K_g2n_mac']
+        K_enc = handshake_details['K_g2n_enc']
+    elif direction == 1:
+        K_mac = handshake_details['K_n2g_mac']
+        K_enc = handshake_details['K_n2g_enc']
+    else:
+        raise ValueError(f"Invalid direction: {direction}")
+
     h = hmac.HMAC(K_mac, hashes.SHA256())
     h.update(header + iv + ciphertext)
 
@@ -47,8 +66,8 @@ def open_record(handshake_details, version, direction, sequence, message_type, p
     header_message_type = int.from_bytes(header[10:11], byteorder='big')
     session_id = handshake_details['session_id']
 
-    if len(ciphertext) != len(plaintext):
-        raise ValueError("Ciphertext length mismatch")
+    # if len(ciphertext) != len(plaintext):
+    #     raise ValueError("Ciphertext length mismatch")
     if header_version != version:
         raise ValueError("Version mismatch")
     if header_direction != direction:
@@ -63,10 +82,12 @@ def open_record(handshake_details, version, direction, sequence, message_type, p
         raise ValueError("IV mismatch")
     
     # decrypt 
-    K_enc = handshake_details['K_enc']
     cipher = Cipher(algorithms.AES(K_enc), modes.CTR(iv))
     decryptor = cipher.decryptor()
     plaintext = decryptor.update(ciphertext) + decryptor.finalize()
+
+    print(f"Opened record: version={version}, direction={direction}, sequence={sequence}, message_type={message_type}, plaintext_length={len(plaintext)}, ciphertext_length={len(ciphertext)}")
+    print(plaintext)
 
     return plaintext
 

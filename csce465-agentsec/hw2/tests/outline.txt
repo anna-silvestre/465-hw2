@@ -1,0 +1,7 @@
+1. valid handshake and bidirectional messages;
+2. modified ciphertext;
+3. modified authenticated header;
+4. replayed record;
+5. record reflected into the opposite direction;
+6. incorrect RSA public key, invalid RSA-PSS transcript signature, or reflected handshake message.
+
